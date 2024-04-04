@@ -33,7 +33,7 @@ def init_segmentor(config, checkpoint=None, device='cuda:0'):
     model = build_segmentor(config.model, test_cfg=config.get('test_cfg'))
     # Si se proporciona un punto de control, carga los pesos del modelo y los metadatos
     if checkpoint is not None:
-        checkpoint = load_checkpoint(model, checkpoint, map_location='cpu')
+        checkpoint = load_checkpoint(model, checkpoint, map_location=device)
         model.CLASSES = checkpoint['meta']['CLASSES']
         model.PALETTE = checkpoint['meta']['PALETTE']
     # Guarda la configuración en el modelo para mayor conveniencia

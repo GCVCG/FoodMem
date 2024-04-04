@@ -72,11 +72,17 @@ parser.add_argument(
     default=None,
     help="dir name of imgs.",
 )
+parser.add_argument(
+    "--out_path",
+    type=str,
+    help="output file path",
+)
 
 
 def main(args: argparse.Namespace) -> None:
     semantic_predict(args.data_root, args.img_dir, args.ann_dir, args.semantic_config, args.options, args.aug_test,
-                     args.semantic_checkpoint, args.eval_options, args.output, args.color_list_path, args.img_path)
+                     args.semantic_checkpoint, args.eval_options, args.output, args.color_list_path, args.img_path,
+                     args.out_path)
 
 
 if __name__ == '__main__':
@@ -84,6 +90,3 @@ if __name__ == '__main__':
     print(args.img_path)
     print(args.output)
     main(args)
-
-# semantic_predict(args.data_root, args.img_dir, args.ann_dir, args.semantic_config, args.options, args.aug_test,
-# args.semantic_checkpoint, args.eval_options, args.output, args.color_list_path, args.img_path)

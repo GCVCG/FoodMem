@@ -44,9 +44,10 @@ def save_result(img_path,
     if show:
         mmcv.imshow(img, win_name, wait_time)
 
+    # TODO Hacer un condicional para que se muestre la visualizacion, poner argumento en la linea de entrada
     if out_file is not None:
-        mmcv.imwrite(img, os.path.join(out_file, vis_save_name))
-        mmcv.imwrite(seg, os.path.join(out_file, mask_save_name))
+        # mmcv.imwrite(img, os.path.join(out_file, vis_save_name))
+        mmcv.imwrite(seg, out_file)
 
     if not (show or out_file):
         print('show==False and out_file is not specified, only '
@@ -125,7 +126,7 @@ def single_gpu_test(model,
 
 def semantic_predict(data_root, img_dir, ann_dir, config, options, aug_test, checkpoint, eval_options, output,
                      color_list_path,
-                     img_path=None):
+                     img_path=None, output_path=None):
     cfg = mmcv.Config.fromfile(config)
 
     if options is not None:
@@ -144,22 +145,24 @@ def semantic_predict(data_root, img_dir, ann_dir, config, options, aug_test, che
     cfg.data.test.test_mode = True
 
     if img_path:
+        # No need to use load_checkpoint as it is done in init_segmentor
         model = init_segmentor(config, checkpoint)
-        load_checkpoint(model, checkpoint, map_location='cpu')
+        # load_checkpoint(model, checkpoint, map_location='cpu')
         result = inference_segmentor(model, img_path)
-        output_dir = os.path.join(output, os.path.basename(img_path).split('.')[0])
-
+        # output_dir = os.path.join(output, os.path.basename(img_path).split('.')[0])
+        print(output_path)
         save_result(
             img_path,
             result,
             color_list_path=color_list_path,
             show=False,
-            out_file=output_dir)
+            out_file=output_path)
 
     else:
+        # No need to use load_checkpoint as it is done in init_segmentor
         cfg.model.train_cfg = None
         model = build_segmentor(cfg.model, test_cfg=cfg.get('test_cfg'))
-        load_checkpoint(model, checkpoint, map_location='cpu')
+        # load_checkpoint(model, checkpoint, map_location='cpu')
         cfg.data.test.data_root = data_root
         cfg.data.test.img_dir = img_dir
         cfg.data.test.ann_dir = ann_dir
