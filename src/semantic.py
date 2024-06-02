@@ -55,12 +55,6 @@ parser.add_argument(
     help='custom options for evaluation'
 )
 parser.add_argument(
-    "--output",
-    type=str,
-    default='Output/Semantic_Results',
-    help="Path to the directory where results will be output. Output will be a folder "
-)
-parser.add_argument(
     '--color_list_path',
     type=str,
     default="src/FoodSAM_tools/color_list.npy",
@@ -72,18 +66,31 @@ parser.add_argument(
     default=None,
     help="dir name of imgs.",
 )
+parser.add_argument(
+    "--out_path",
+    type=str,
+    help="output file path",
+)
 
+parser.add_argument('--video', type=str,
+                    help='Path to the video file or directory with .jpg video frames to process')
+parser.add_argument('--masks', type=str,
+                    help='Path to the directory with individual .png masks for corresponding video frames')
+parser.add_argument('--frame_number', type=int,
+                    help='Frame number to process')
+parser.add_argument(
+    "--show_vis",
+    type=bool,
+    default=False,
+    help="vis pred mask",
+)
 
 def main(args: argparse.Namespace) -> None:
-    semantic_predict(args.data_root, args.img_dir, args.ann_dir, args.semantic_config, args.options, args.aug_test,
-                     args.semantic_checkpoint, args.eval_options, args.output, args.color_list_path, args.img_path)
+    semantic_predict(data_root=args.data_root, img_dir=args.img_dir, ann_dir=args.ann_dir, config=args.semantic_config, options=args.options, aug_test=args.aug_test,
+                     checkpoint=args.semantic_checkpoint, eval_options=args.eval_options, color_list_path=args.color_list_path, show_vis=args.show_vis, img_path=args.img_path,
+                     output_path=args.out_path)
 
 
 if __name__ == '__main__':
     args = parser.parse_args()
-    print(args.img_path)
-    print(args.output)
     main(args)
-
-# semantic_predict(args.data_root, args.img_dir, args.ann_dir, args.semantic_config, args.options, args.aug_test,
-# args.semantic_checkpoint, args.eval_options, args.output, args.color_list_path, args.img_path)

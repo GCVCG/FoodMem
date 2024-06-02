@@ -14,16 +14,18 @@ from mmcv.runner import load_checkpoint
 from src.mmseg.apis.inference import inference_segmentor, init_segmentor
 from src.mmseg.datasets.builder import build_dataloader, build_dataset
 from src.mmseg.models.builder import build_segmentor
+from torchsummary import summary
 
 
 def save_result(img_path,
                 result,
+                show_vis,
                 color_list_path,
                 win_name='',
                 show=False,
                 wait_time=0,
                 out_file=None,
-                vis_save_name='pred_vis.png',
+                vis_save_name='pred_vis',
                 mask_save_name='pred_mask.png'):
     img = mmcv.imread(img_path)
     img = img.copy()
@@ -44,9 +46,18 @@ def save_result(img_path,
     if show:
         mmcv.imshow(img, win_name, wait_time)
 
+    # TODO Hacer un condicional para que se muestre la visualizacion, poner argumento en la linea de entrada
+    if show_vis:
+        file_name = os.path.basename(img_path)
+        file_stem, _ = os.path.splitext(file_name)
+        vis_save_name = vis_save_name + "_" + f"{file_stem}" + ".png"
+        mmcv.imwrite(img, os.path.join(out_file, "vis", vis_save_name))
+    # if show_mask:
     if out_file is not None:
-        mmcv.imwrite(img, os.path.join(out_file, vis_save_name))
-        mmcv.imwrite(seg, os.path.join(out_file, mask_save_name))
+        file_name = os.path.basename(img_path)
+        file_stem, _ = os.path.splitext(file_name)
+        out_file = os.path.join(out_file, f"{file_stem}.png")
+        mmcv.imwrite(seg, out_file)
 
     if not (show or out_file):
         print('show==False and out_file is not specified, only '
@@ -123,11 +134,10 @@ def single_gpu_test(model,
     return results
 
 
-def semantic_predict(data_root, img_dir, ann_dir, config, options, aug_test, checkpoint, eval_options, output,
-                     color_list_path,
-                     img_path=None):
+def semantic_predict(data_root, img_dir, ann_dir, config, options, aug_test, checkpoint, eval_options,
+                     color_list_path, show_vis,
+                     img_path=None, output_path=None):
     cfg = mmcv.Config.fromfile(config)
-
     if options is not None:
         cfg.merge_from_dict(options)
 
@@ -144,22 +154,31 @@ def semantic_predict(data_root, img_dir, ann_dir, config, options, aug_test, che
     cfg.data.test.test_mode = True
 
     if img_path:
+        # No need to use load_checkpoint as it is done in init_segmentor
         model = init_segmentor(config, checkpoint)
-        load_checkpoint(model, checkpoint, map_location='cpu')
-        result = inference_segmentor(model, img_path)
-        output_dir = os.path.join(output, os.path.basename(img_path).split('.')[0])
+        #model.forward = model.forward_dummy
+        #summary(model, (3, 768, 768))
+        #print(model)
 
+        # load_checkpoint(model, checkpoint, map_location='cpu')
+        result = inference_segmentor(model, img_path)
+        # output_dir = os.path.join(output, os.path.basename(img_path).split('.')[0])
         save_result(
             img_path,
             result,
+            show_vis,
             color_list_path=color_list_path,
             show=False,
-            out_file=output_dir)
+            out_file=output_path)
 
     else:
+        # No need to use load_checkpoint as it is done in init_segmentor
         cfg.model.train_cfg = None
         model = build_segmentor(cfg.model, test_cfg=cfg.get('test_cfg'))
-        load_checkpoint(model, checkpoint, map_location='cpu')
+        #model.forward = model.forward_dummy
+        #summary(model, (3, 768, 768))
+
+        # load_checkpoint(model, checkpoint, map_location='cpu')
         cfg.data.test.data_root = data_root
         cfg.data.test.img_dir = img_dir
         cfg.data.test.ann_dir = ann_dir
@@ -178,5 +197,7 @@ def semantic_predict(data_root, img_dir, ann_dir, config, options, aug_test, che
             efficient_test = eval_options.get('efficient_test', False)
 
         model = MMDataParallel(model, device_ids=[0])
-        single_gpu_test(model, data_loader, color_list_path, out_dir=output,
+        #model.forward = model.forward_dummy
+        #summary(model, (3, 768, 768))
+        single_gpu_test(model, data_loader, color_list_path, out_dir=output_path,
                                   efficient_test=efficient_test)
