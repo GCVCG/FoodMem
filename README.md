@@ -1,9 +1,13 @@
 # FoodMEM: A Fast and Precise Food Video Segmentation
-Automatic food segmentation in near real-time
+
+## Abstract
+FoodMEM is a novel model of video object segmentation that detects and tracks food in a video, generating detailed masks of the found ingredients, even in very complex scenes. The architecture proposed is an automated method for the semantic segmentation of the food portion in each scene, first using the FoodSAM model that produces one or multiple segment masks of the food, and then using a memory-based tracking model XMem++ to track the food masks in the complex scene.
+
+## Checkpoints
 Checkpoint must be added to the root dir (It must look like FoodMEM/ckpts/SETR_MLA/iter_80000.pth): https://drive.google.com/drive/folders/1Bxwj8FDGIdOnEnscjLwB7sisHlMHdo7H?usp=drive_link
 Saves must be added to the XMem2 dir (It must look like FoodMEM/XMem2/saves): https://drive.google.com/drive/folders/1pLiy-hyjzscLjmysexPDmp5DW3QJv0t4?usp=drive_link
 
-# Installation
+## Installation
 ````bash
 conda create -n FoodMEM python=3.8
 
