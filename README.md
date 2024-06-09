@@ -6,6 +6,7 @@
 Food segmentation is crucial in various research fields, such as health, agriculture, and food biotechnology. Segmenting and tracking different types of food in images or videos is undeniably a significant achievement, and it is currently considered a newly emerging topic in today’s society. Our study aims to find and develop a production-grade framework for segmenting and tracking various types of food in a given set of images or videos at high-quality performance and near-real-time speed with minimum hardware resources. This unlocks many challenges in real-world applications, such as food volume estimation, calories estimation, 3D reconstruction, augmented and virtual reality, or digital twins. We introduce FoodMem, a novel framework for segmenting food in 360º scenes. Our framework can effectively segment food portions in a given video and generate accurate masks. Most semantic segmentation models, especially for food-related tasks, have limitations that affect their performance, such as handling different camera locations that did not exist in the training set. Plus, the inference speed for individual images does not fit real-world applications, especially those that focus on video processing. In contrast, memory-based models are becoming popular in object-tracking applications because of their performance and speed. Still, they are limited since they rely on user input, such as the user drawing the input mask manually, which indicates a lack of automation. To overcome these limitations, we propose FoodMem, a novel Food Video segmentation framework that combines the (1) SETR model to generate segment one- or few- masks of the food portions in a given scene and (2) XMem++, a memory-based tracking model, to track the food masks in complex scenes. Our framework performs better than the state-of-the-art food segmentation frameworks in segmenting food in different camera-capturing locations, illumination, reflection, scene complexity, and food diversity, achieving a significant segmentation noise reduction, artifact elimination, and completing the missing parts. We also introduce an annotated food dataset, which covers new challenging use cases not found in previous benchmarks. We conduct extensive experiments on Nutrition5k and Vegetables and Fruits datasets, showing that FoodMem improves the state-of-the-art by 2.5% mean average precision in food video segmentation. Moreover, FoodMem is 58 times faster than the state-of-the-art on average for both datasets.
 
 ![FoodMem architecture](assets/FoodMemModel.png)
+
 We used a single image input for simplicity. Our two-stage framework (a) shows the SETR framework, where it accepts an image and generates a mask, followed by (b) XMem2, which accepts the mask and a set of images as a given input and produces masks for all frames.
 
 ## Checkpoints
@@ -53,6 +54,7 @@ python .\src\eval_map.py --submit_dir <path/to/folder> --truth_dir <path/to/fold
 |-------------------|------------------|-------------|----------|-------------|----------------|
 | **Nutrition5k**   | 19-65            | 00:12:34    | 00:00:40 | 00:01:07    | **00:00:25**   |
 | **V&F**           | 172-232          | 00:44:20    | 00:02:04 | 00:05:11    | **00:00:31**   |
+
 *The models include FoodSAM, DEVA, kMean++, and our framework. The inference time was recorded in the format of hours:minutes:seconds.*
 
 ### Mean Average Precision (mAP)
@@ -61,6 +63,7 @@ python .\src\eval_map.py --submit_dir <path/to/folder> --truth_dir <path/to/fold
 |-------------------|-------------|----------|-------------|----------------|
 | **Nutrition5k**   | **0.9192**  | 0.8825   | 0.4232      | 0.9098         |
 | **V&F**           | 0.8914      | 0.8548   | 0.4361      | **0.9499**     |
+
 *Comparison of mean average precision scores achieved by different models on two datasets: Nutrition5k and V&F. The models evaluated include FoodSAM, DEVA, kMean++, and our framework.*
 
 ### Comparison of Recall Scores
