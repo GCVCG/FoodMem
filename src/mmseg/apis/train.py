@@ -13,31 +13,37 @@ from src.mmseg.utils import get_root_logger
 
 def set_random_seed(seed, deterministic=False):
     """
-    Establece la semilla aleatoria.
+    Set the random seed.
 
-    Esta función establece la semilla aleatoria para garantizar la reproducibilidad de los experimentos.
+    This function sets the random seed to ensure experiment reproducibility.
 
     Args:
-        seed (int): Semilla a utilizar.
-        deterministic (bool): Si se debe establecer la opción determinista para el backend de CUDNN,
-            es decir, establecer `torch.backends.cudnn.deterministic` en True y `torch.backends.cudnn.benchmark`
-            en False. Por defecto: False.
+        seed (int): Seed to be used.
+        deterministic (bool): Whether to set the deterministic option for the CuDNN backend,
+            i.e., setting `torch.backends.cudnn.deterministic` to True and `torch.backends.cudnn.benchmark`
+            to False. Default: False.
     """
-    # Establece la semilla para la generación de números aleatorios en Python
+
+    # Set the random seed for Python
     random.seed(seed)
-    # Establece la semilla para la generación de números aleatorios en NumPy
+
+    # Set the random seed for NumPy
     np.random.seed(seed)
-    # Establece la semilla para la generación de números aleatorios en PyTorch
+
+    # Set the random seed for PyTorch
     torch.manual_seed(seed)
-    # Establece la semilla para la generación de números aleatorios en todas las GPUs disponibles
+
+    # Set the random seed for all available GPUs
     torch.cuda.manual_seed_all(seed)
+
     if deterministic:
-        # Establece el modo determinista en el backend de CUDNN
+        # Set the deterministic mode for the CuDNN backend
         torch.backends.cudnn.deterministic = True
-        # Desactiva el modo de referencia (benchmark) en el backend de CUDNN
+        # Disable benchmark mode in the CuDNN backend
         torch.backends.cudnn.benchmark = False
 
 
+# Function: Train Segmentor
 def train_segmentor(model,
                     dataset,
                     cfg,
@@ -46,21 +52,22 @@ def train_segmentor(model,
                     timestamp=None,
                     meta=None):
     """
-    Inicia el entrenamiento del segmentador.
+    Initiates training for the segmentor.
 
     Args:
-        model (nn.Module): Modelo a ser entrenado.
-        dataset (Dataset or list[Dataset]): Conjunto de datos de entrenamiento. Puede ser una sola instancia
-            de Dataset o una lista de instancias de Dataset si se está utilizando un conjunto de datos de
-            entrenamiento múltiple.
-        cfg (dict): Configuración del entrenamiento.
-        distributed (bool): Indica si se está utilizando el entrenamiento distribuido. Por defecto: False.
-        validate (bool): Indica si se debe realizar la validación durante el entrenamiento. Por defecto: False.
-        timestamp (str): Marca de tiempo. Por defecto: None.
-        meta (dict): Metadatos asociados con el entrenamiento. Por defecto: None.
+        model (nn.Module): Model to be trained.
+        dataset (Dataset or list[Dataset]): Training dataset. It can be a single instance
+            of Dataset or a list of Dataset instances if using multiple training datasets.
+        cfg (dict): Training configuration.
+        distributed (bool): Indicates whether distributed training is used. Default: False.
+        validate (bool): Indicates whether validation should be performed during training. Default: False.
+        timestamp (str): Timestamp. Default: None.
+        meta (dict): Metadata associated with the training. Default: None.
     """
+
     logger = get_root_logger(cfg.log_level)
-    # Prepara los cargadores de datos
+
+    # Prepare data loaders
     dataset = dataset if isinstance(dataset, (list, tuple)) else [dataset]
     data_loaders = [
         build_dataloader(
@@ -74,10 +81,10 @@ def train_segmentor(model,
             drop_last=True) for ds in dataset
     ]
 
-    # Coloca el modelo en las GPUs
+    # Place the model on GPUs
     if distributed:
         find_unused_parameters = cfg.get('find_unused_parameters', False)
-        # Establece el parámetro `find_unused_parameters` en DistributedDataParallel
+        # Set the `find_unused_parameters` parameter in DistributedDataParallel
         model = MMDistributedDataParallel(
             model.cuda(),
             device_ids=[torch.cuda.current_device()],
@@ -87,7 +94,7 @@ def train_segmentor(model,
         model = MMDataParallel(
             model.cuda(cfg.gpu_ids[0]), device_ids=cfg.gpu_ids)
 
-    # Construye el runner
+    # Build the runner
     optimizer = build_optimizer(model, cfg.optimizer)
 
     if cfg.get('runner') is None:
@@ -106,15 +113,15 @@ def train_segmentor(model,
             logger=logger,
             meta=meta))
 
-    # Registra los hooks
+    # Register hooks
     runner.register_training_hooks(cfg.lr_config, cfg.optimizer_config,
                                    cfg.checkpoint_config, cfg.log_config,
                                    cfg.get('momentum_config', None))
 
-    # Una solución temporal para que los nombres de los archivos .log y .log.json sean los mismos
+    # A temporary fix to make .log and .log.json file names the same
     runner.timestamp = timestamp
 
-    # Registra los hooks de evaluación
+    # Register evaluation hooks
     if validate:
         val_dataset = build_dataset(cfg.data.val, dict(test_mode=True))
         val_dataloader = build_dataloader(
@@ -132,4 +139,5 @@ def train_segmentor(model,
         runner.resume(cfg.resume_from)
     elif cfg.load_from:
         runner.load_checkpoint(cfg.load_from)
+
     runner.run(data_loaders, cfg.workflow)

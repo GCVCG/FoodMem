@@ -2,7 +2,7 @@ import mmcv
 
 
 def cityscapes_classes():
-    """Devuelve los nombres de las clases para el conjunto de datos Cityscapes."""
+    """Returns the class names for the Cityscapes dataset."""
     return [
         'road', 'sidewalk', 'building', 'wall', 'fence', 'pole',
         'traffic light', 'traffic sign', 'vegetation', 'terrain', 'sky',
@@ -12,7 +12,7 @@ def cityscapes_classes():
 
 
 def ade_classes():
-    """Devuelve los nombres de las clases para el conjunto de datos ADE20K."""
+    """Returns the class names for the ADE20K dataset."""
     return [
         'wall', 'building', 'sky', 'floor', 'tree', 'ceiling', 'road', 'bed ',
         'windowpane', 'grass', 'cabinet', 'sidewalk', 'person', 'earth',
@@ -42,7 +42,7 @@ def ade_classes():
 
 
 def voc_classes():
-    """Devuelve los nombres de las clases para el conjunto de datos Pascal VOC."""
+    """Returns the class names for the Pascal VOC dataset."""
     return [
         'background', 'aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus',
         'car', 'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse',
@@ -52,16 +52,18 @@ def voc_classes():
 
 
 def cityscapes_palette():
-    """Devuelve la paleta de colores RGB para el conjunto de datos Cityscapes."""
-    return [[128, 64, 128], [244, 35, 232], [70, 70, 70], [102, 102, 156],
-            [190, 153, 153], [153, 153, 153], [250, 170, 30], [220, 220, 0],
-            [107, 142, 35], [152, 251, 152], [70, 130, 180], [220, 20, 60],
-            [255, 0, 0], [0, 0, 142], [0, 0, 70], [0, 60, 100], [0, 80, 100],
-            [0, 0, 230], [119, 11, 32]]
+    """Returns the RGB color palette for the Cityscapes dataset."""
+    return [
+        [128, 64, 128], [244, 35, 232], [70, 70, 70], [102, 102, 156],
+        [190, 153, 153], [153, 153, 153], [250, 170, 30], [220, 220, 0],
+        [107, 142, 35], [152, 251, 152], [70, 130, 180], [220, 20, 60],
+        [255, 0, 0], [0, 0, 142], [0, 0, 70], [0, 60, 100], [0, 80, 100],
+        [0, 0, 230], [119, 11, 32]
+    ]
 
 
 def ade_palette():
-    """Devuelve la paleta de colores RGB para el conjunto de datos ADE20K."""
+    """Returns the RGB color palette for the ADE20K dataset."""
     return [[120, 120, 120], [180, 120, 120], [6, 230, 230], [80, 50, 50],
             [4, 200, 3], [120, 120, 80], [140, 140, 140], [204, 5, 255],
             [230, 230, 230], [4, 250, 7], [224, 5, 255], [235, 255, 7],
@@ -99,18 +101,22 @@ def ade_palette():
             [41, 0, 255], [41, 255, 0], [173, 0, 255], [0, 245, 255],
             [71, 0, 255], [122, 0, 255], [0, 255, 184], [0, 92, 255],
             [184, 255, 0], [0, 133, 255], [255, 214, 0], [25, 194, 194],
-            [102, 255, 0], [92, 0, 255]]
+            [102, 255, 0], [92, 0, 255]
+            ]
 
 
 def voc_palette():
-    """Devuelve la paleta de colores RGB para el conjunto de datos Pascal VOC."""
-    return [[0, 0, 0], [128, 0, 0], [0, 128, 0], [128, 128, 0], [0, 0, 128],
-            [128, 0, 128], [0, 128, 128], [128, 128, 128], [64, 0, 0],
-            [192, 0, 0], [64, 128, 0], [192, 128, 0], [64, 0, 128],
-            [192, 0, 128], [64, 128, 128], [192, 128, 128], [0, 64, 0],
-            [128, 64, 0], [0, 192, 0], [128, 192, 0], [0, 64, 128]]
+    """Returns the RGB color palette for the Pascal VOC dataset."""
+    return [
+        [0, 0, 0], [128, 0, 0], [0, 128, 0], [128, 128, 0], [0, 0, 128],
+        [128, 0, 128], [0, 128, 128], [128, 128, 128], [64, 0, 0],
+        [192, 0, 0], [64, 128, 0], [192, 128, 0], [64, 0, 128],
+        [192, 0, 128], [64, 128, 128], [192, 128, 128], [0, 64, 0],
+        [128, 64, 0], [0, 192, 0], [128, 192, 0], [0, 64, 128]
+    ]
 
-# Define los alias para los conjuntos de datos
+
+# Dataset Aliases
 dataset_aliases = {
     'cityscapes': ['cityscapes'],
     'ade': ['ade', 'ade20k'],
@@ -120,59 +126,65 @@ dataset_aliases = {
 
 def get_classes(dataset):
     """
-    Obtiene los nombres de las clases del conjunto de datos especificado.
+    Get the class names of the specified dataset.
 
     Args:
-        dataset (str): Nombre del conjunto de datos.
+        dataset (str): Name of the dataset.
 
     Returns:
-        list: Lista de nombres de las clases.
+        list: List of class names.
     """
-    # Diccionario que mapea los alias de los conjuntos de datos a sus nombres
+
+    # Dictionary mapping dataset aliases to their names
     alias2name = {}
     for name, aliases in dataset_aliases.items():
         for alias in aliases:
             alias2name[alias] = name
-    # Verifica si el conjunto de datos es una cadena de caracteres
-    if mmcv.is_str(dataset):
-        # Si el conjunto de datos está en los alias mapeados
+
+    # Check if dataset is a string
+    if isinstance(dataset, str):
+        # If dataset is in the mapped aliases
         if dataset in alias2name:
-            # Obtiene los nombres de las clases del conjunto de datos usando la función correspondiente
+            # Get the class names of the dataset using the corresponding function
             labels = eval(alias2name[dataset] + '_classes()')
-        # Si el conjunto de datos no es reconocido, lanza un ValueError
+        # If dataset is not recognized, raise a ValueError
         else:
             raise ValueError(f'Unrecognized dataset: {dataset}')
-    # Si el tipo de datos del conjunto de datos no es una cadena de caracteres, lanza un TypeError
+    # If dataset type is not a string, raise a TypeError
     else:
         raise TypeError(f'dataset must a str, but got {type(dataset)}')
+
     return labels
 
 
 def get_palette(dataset):
     """
-    Obtiene la paleta de clases (RGB) del conjunto de datos especificado.
+    Get the class palette (RGB) of the specified dataset.
 
     Args:
-        dataset (str): Nombre del conjunto de datos.
+        dataset (str): Name of the dataset.
 
     Returns:
-        list: Lista de valores RGB que representan la paleta de clases.
-    """    
-    # Diccionario que mapea los alias de los conjuntos de datos a sus nombres
+        list: List of RGB values representing the class palette.
+    """
+
+    # Dictionary mapping dataset aliases to their names
     alias2name = {}
     for name, aliases in dataset_aliases.items():
         for alias in aliases:
             alias2name[alias] = name
-    # Verifica si el conjunto de datos es una cadena de caracteres
-    if mmcv.is_str(dataset):
-        # Si el conjunto de datos está en los alias mapeados
+
+    # Check if dataset is a string
+    if isinstance(dataset, str):
+        # If dataset is in the mapped aliases
         if dataset in alias2name:
-            # Obtiene la paleta de clases del conjunto de datos usando la función correspondiente
+            # Get the class palette of the dataset using the corresponding function
             labels = eval(alias2name[dataset] + '_palette()')
-        # Si el conjunto de datos no es reconocido, lanza un ValueError
+        # If dataset is not recognized, raise a ValueError
         else:
             raise ValueError(f'Unrecognized dataset: {dataset}')
-    # Si el tipo de datos del conjunto de datos no es una cadena de caracteres, lanza un TypeError
+    # If dataset type is not a string, raise a TypeError
     else:
         raise TypeError(f'dataset must a str, but got {type(dataset)}')
+
     return labels

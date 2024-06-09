@@ -9,25 +9,25 @@ from src.mmseg.datasets.builder import PIPELINES
 @PIPELINES.register_module()
 class LoadImageFromFile(object):
     """
-    Carga una imagen desde un archivo.
+    Loads an image from a file.
 
-    Las claves requeridas son "img_prefix" e "img_info" (un diccionario que debe contener la
-    clave "filename"). Las claves agregadas o actualizadas son "filename", "img", "img_shape",
-    "ori_shape" (igual a `img_shape`), "pad_shape" (igual a `img_shape`),
-    "scale_factor" (1.0) y "img_norm_cfg" (means=0 y stds=1).
+    The required keys are "img_prefix" and "img_info" (a dictionary that must contain the
+    key "filename"). The added or updated keys are "filename", "img", "img_shape",
+    "ori_shape" (equal to `img_shape`), "pad_shape" (equal to `img_shape`),
+    "scale_factor" (1.0), and "img_norm_cfg" (means=0 and stds=1).
 
     Args:
-        to_float32 (bool): Si convertir la imagen cargada a un array numpy float32.
-            Si se establece en False, la imagen cargada es un array uint8.
-            Por defecto: False.
-        color_type (str): El argumento de bandera para :func:`mmcv.imfrombytes`.
-            Por defecto: 'color'.
-        file_client_args (dict): Argumentos para instanciar un FileClient.
-            Ver :class:`mmcv.fileio.FileClient` para más detalles.
-            Por defecto: ``dict(backend='disk')``.
-        imdecode_backend (str): Backend para :func:`mmcv.imdecode`. Por defecto:
+        to_float32 (bool): Whether to convert the loaded image to a float32 numpy array.
+            If set to False, the loaded image is a uint8 array. Default: False.
+        color_type (str): The flag argument for :func:`mmcv.imfrombytes`.
+            Default: 'color'.
+        file_client_args (dict): Arguments for instantiating a FileClient.
+            See :class:`mmcv.fileio.FileClient` for more details.
+            Default: ``dict(backend='disk')``.
+        imdecode_backend (str): Backend for :func:`mmcv.imdecode`. Default:
             'cv2'
     """
+
     def __init__(self,
                  to_float32=False,
                  color_type='color',
@@ -42,14 +42,15 @@ class LoadImageFromFile(object):
 
     def __call__(self, results):
         """
-        Llama a las funciones para cargar la imagen y obtener información de metaimagen.
+        Calls functions to load the image and get image meta-information.
 
         Args:
-            results (dict): Diccionario de resultados de :obj:`mmseg.CustomDataset`.
+            results (dict): Results dictionary from :obj:`mmseg.CustomDataset`.
 
         Returns:
-            dict: El diccionario contiene la imagen cargada e información de metaimagen.
+            dict: Dictionary containing the loaded image and image meta-information.
         """
+
         if self.file_client is None:
             self.file_client = mmcv.FileClient(**self.file_client_args)
 
@@ -61,6 +62,7 @@ class LoadImageFromFile(object):
         img_bytes = self.file_client.get(filename)
         img = mmcv.imfrombytes(
             img_bytes, flag=self.color_type, backend=self.imdecode_backend)
+
         if self.to_float32:
             img = img.astype(np.float32)
 
@@ -77,6 +79,7 @@ class LoadImageFromFile(object):
             mean=np.zeros(num_channels, dtype=np.float32),
             std=np.ones(num_channels, dtype=np.float32),
             to_rgb=False)
+
         return results
 
 
@@ -85,24 +88,26 @@ class LoadImageFromFile(object):
         repr_str += f'(to_float32={self.to_float32},'
         repr_str += f"color_type='{self.color_type}',"
         repr_str += f"imdecode_backend='{self.imdecode_backend}')"
+
         return repr_str
 
 
 @PIPELINES.register_module()
 class LoadAnnotations(object):
     """
-    Carga anotaciones para segmentación semántica.
+    Loads annotations for semantic segmentation.
 
     Args:
-        reduce_zero_label (bool): Si reducir todos los valores de etiqueta en 1.
-            Usualmente se utiliza para conjuntos de datos donde 0 es la etiqueta de fondo.
-            Por defecto: False.
-        file_client_args (dict): Argumentos para instanciar un FileClient.
-            Ver :class:`mmcv.fileio.FileClient` para más detalles.
-            Por defecto: ``dict(backend='disk')``.
-        imdecode_backend (str): Backend para :func:`mmcv.imdecode`. Por defecto:
+        reduce_zero_label (bool): Whether to reduce all label values by 1.
+            Usually used for datasets where 0 is the background label.
+            Default: False.
+        file_client_args (dict): Arguments for instantiating a FileClient.
+            See :class:`mmcv.fileio.FileClient` for more details.
+            Default: ``dict(backend='disk')``.
+        imdecode_backend (str): Backend for :func:`mmcv.imdecode`. Default:
             'pillow'
     """
+
     def __init__(self,
                  reduce_zero_label=False,
                  file_client_args=dict(backend='disk'),
@@ -114,14 +119,15 @@ class LoadAnnotations(object):
 
     def __call__(self, results):
         """
-        Llama a la función para cargar anotaciones de varios tipos.
+        Calls the function to load annotations of various types.
 
         Args:
-            results (dict): Diccionario de resultados de :obj:`mmseg.CustomDataset`.
+            results (dict): Results dictionary from :obj:`mmseg.CustomDataset`.
 
         Returns:
-            dict: El diccionario contiene las anotaciones de segmentación semántica cargadas.
+            dict: Dictionary containing the loaded semantic segmentation annotations.
         """
+
         if self.file_client is None:
             self.file_client = mmcv.FileClient(**self.file_client_args)
 
@@ -134,21 +140,25 @@ class LoadAnnotations(object):
         gt_semantic_seg = mmcv.imfrombytes(
             img_bytes, flag='unchanged',
             backend=self.imdecode_backend).squeeze().astype(np.uint8)
+
         if len(gt_semantic_seg.shape) == 3:
             gt_semantic_seg = gt_semantic_seg[:,:,2]
 
-        # modify if custom classes
+        # Modify if custom classes
         if results.get('label_map', None) is not None:
             for old_id, new_id in results['label_map'].items():
                 gt_semantic_seg[gt_semantic_seg == old_id] = new_id
-        # reduce zero_label
+
+        # Reduce zero_label
         if self.reduce_zero_label:
-            # avoid using underflow conversion
+            # Avoid using underflow conversion
             gt_semantic_seg[gt_semantic_seg == 0] = 255
             gt_semantic_seg = gt_semantic_seg - 1
             gt_semantic_seg[gt_semantic_seg == 254] = 255
+
         results['gt_semantic_seg'] = gt_semantic_seg
         results['seg_fields'].append('gt_semantic_seg')
+
         return results
 
 
@@ -156,4 +166,6 @@ class LoadAnnotations(object):
         repr_str = self.__class__.__name__
         repr_str += f'(reduce_zero_label={self.reduce_zero_label},'
         repr_str += f"imdecode_backend='{self.imdecode_backend}')"
+
         return repr_str
+

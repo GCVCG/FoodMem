@@ -1,6 +1,8 @@
 norm_cfg = dict(type='SyncBN', requires_grad=True)
-# MODELO
+
+# Model
 model = dict(
+    # Encoder-Decoder
     type='EncoderDecoder',
     backbone=dict(
         type='VIT_MLA',
@@ -18,7 +20,7 @@ model = dict(
         align_corners=False,
         mla_channels=256,
         mla_index=(5, 7, 9, 11)),
-    # Decodificador
+    # Decode Head
     decode_head=dict(
         type='VIT_MLAHead',
         in_channels=1024,
@@ -31,7 +33,7 @@ model = dict(
         align_corners=False,
         loss_decode=dict(
             type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0)),
-    # Cabezas auxiliares para la segmentación semántica
+    # Auxiliary Heads
     auxiliary_head=[
         dict(
             type='VIT_MLA_AUXIHead',
@@ -74,17 +76,21 @@ model = dict(
             loss_decode=dict(
                 type='CrossEntropyLoss', use_sigmoid=False, loss_weight=0.4))
     ])
-# Configuración del train y test
+
+# Train/Test config
 train_cfg = dict()
 test_cfg = dict(mode='slide', crop_size=(768, 768), stride=(512, 512))
+
 # Dataset
 dataset_type = 'CustomDataset'
 data_root = './part_dataset/'
-# Configuración de normalización
+
+# Normalization config
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 crop_size = (768, 768)
-# Transformaciones a las imágenes y etiquetas
+
+# Images transformations
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations'),
@@ -119,7 +125,8 @@ test_pipeline = [
             dict(type='Collect', keys=['img'])
         ])
 ]
-# Conjuntos de datos de entrenamiento, validación y prueba y sus transformaciones
+
+# Train/Validaiton/Test datasets and its transformations
 data = dict(
     samples_per_gpu=1,
     workers_per_gpu=2,
@@ -191,7 +198,8 @@ data = dict(
                     dict(type='Collect', keys=['img'])
                 ])
         ]))
-# Configuración de registro
+
+# Log config
 log_config = dict(
     interval=50, hooks=[dict(type='TextLoggerHook', by_epoch=False)])
 dist_params = dict(backend='nccl')
@@ -200,7 +208,8 @@ load_from = None
 resume_from = None
 workflow = [('train', 1)]
 cudnn_benchmark = True
-# Configuración del optimizador y la política de ajuste de la tasa de aprendizaje
+
+# Optimizer/Learning rate config
 optimizer = dict(
     type='SGD',
     lr=0.002,
@@ -209,14 +218,19 @@ optimizer = dict(
     paramwise_cfg=dict(custom_keys=dict(head=dict(lr_mult=10.0))))
 optimizer_config = dict()
 lr_config = dict(policy='poly', power=0.9, min_lr=0.0001, by_epoch=False)
-# Tipo de corredor
+
+# Runner type
 runner = dict(type='IterBasedRunner', max_iters=80000)
-# Configuración para guardar los checkpoints
+
+# Checkpoint config
 checkpoint_config = dict(by_epoch=False, interval=4000)
-# Configuración para la evaluación
+
+# Evaluation config
 evaluation = dict(interval=4000, metric='mIoU')
 find_unused_parameters = True
-# Directorio donde se guardarán los checkpoints
+
+# Checkpoint's dir
 work_dir = 'checkpoints/SETR_224'
-# Identificadores de GPU
+
+# GPU IDs
 gpu_ids = range(0, 1)

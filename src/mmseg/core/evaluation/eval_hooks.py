@@ -5,41 +5,26 @@ from torch.utils.data import DataLoader
 
 
 class EvalHook(Hook):
-    """
-    Gancho de evaluación.
-
-    Este gancho evalúa el modelo en un conjunto de datos de validación en intervalos específicos durante el entrenamiento.
-
-    Args:
-        dataloader (DataLoader): Un DataLoader de PyTorch para el conjunto de datos de validación.
-        interval (int): Intervalo de evaluación en épocas. El valor predeterminado es 1.
-        by_epoch (bool): Si se evalúa por época. Si es False, la evaluación se realiza en base a las iteraciones. El valor predeterminado es False.
-        **eval_kwargs: Argumentos de palabras clave adicionales pasados a la función de evaluación.
-
-    Attributes:
-        dataloader (DataLoader): El DataLoader para el conjunto de datos de validación.
-        interval (int): Intervalo de evaluación en épocas.
-        by_epoch (bool): Si se evalúa por época.
-        eval_kwargs: Argumentos de palabras clave adicionales para la evaluación.
-    """
 
     def __init__(self, dataloader, interval=1, by_epoch=False, **eval_kwargs):
         """
-        Gancho de evaluación.
+        Evaluation hook.
 
-        Este gancho evalúa el modelo en un conjunto de datos de validación en intervalos específicos durante el entrenamiento.
+        This hook evaluates the model on a validation dataset at specific intervals during training.
 
         Args:
-            dataloader (DataLoader): Un DataLoader de PyTorch para el conjunto de datos de validación.
-            interval (int): Intervalo de evaluación en épocas. El valor predeterminado es 1.
-            by_epoch (bool): Si se evalúa por época. Si es False, la evaluación se realiza en base a las iteraciones. El valor predeterminado es False.
-            **eval_kwargs: Argumentos de palabras clave adicionales pasados a la función de evaluación.
+            dataloader (DataLoader): A PyTorch DataLoader for the validation dataset.
+            interval (int): Evaluation interval in epochs. Default is 1.
+            by_epoch (bool): Whether to evaluate by epoch. If False, evaluation is done based on iterations. Default is False.
+            **eval_kwargs: Additional keyword arguments passed to the evaluation function.
         """
-        # Verifica que el dataloader sea un DataLoader de PyTorch
+
+        # Check if dataloader is a PyTorch DataLoader
         if not isinstance(dataloader, DataLoader):
             raise TypeError('dataloader must be a pytorch DataLoader, but got '
                             f'{type(dataloader)}')
-        # Inicializa los atributos del gancho
+
+        # Initialize hook attributes
         self.dataloader = dataloader
         self.interval = interval
         self.by_epoch = by_epoch
@@ -47,17 +32,20 @@ class EvalHook(Hook):
 
     def after_train_iter(self, runner):
         """
-        Gancho después de una iteración de entrenamiento.
+        Hook after a training iteration.
 
-        Este método se ejecuta después de cada iteración de entrenamiento. Si el entrenamiento se realiza por épocas o si no se alcanza el intervalo de evaluación de iteraciones, el método retorna sin realizar ninguna acción. De lo contrario, realiza una evaluación del modelo en el conjunto de datos de validación.
+        This method is executed after each training iteration. If training is done by epochs or if the evaluation interval of iterations is not reached, the method returns without performing any action. Otherwise, it performs an evaluation of the model on the validation dataset.
 
         Args:
-            runner (Runner): Instancia del corredor de entrenamiento.
+            runner (Runner): Instance of the training runner.
         """
-        # Si se realiza la evaluación por épocas o si no es tiempo de evaluar en esta iteración, retorna sin hacer nada
+
+        # If evaluation is done by epochs or if it's not time to evaluate in this iteration, return without doing
+        # anything
         if self.by_epoch or not self.every_n_iters(runner, self.interval):
             return
-        # Realiza la evaluación del modelo en el conjunto de datos de validación
+
+        # Perform model evaluation on the validation dataset
         from src.mmseg.apis import single_gpu_test
         runner.log_buffer.clear()
         results = single_gpu_test(runner.model, self.dataloader, show=False)
@@ -65,17 +53,20 @@ class EvalHook(Hook):
 
     def after_train_epoch(self, runner):
         """
-        Gancho después de una época de entrenamiento.
+        Hook after a training epoch.
 
-        Este método se ejecuta después de cada época de entrenamiento. Si la evaluación no se realiza por épocas o si no es tiempo de evaluar en esta época, el método retorna sin realizar ninguna acción. De lo contrario, realiza una evaluación del modelo en el conjunto de datos de validación.
+        This method is executed after each training epoch. If evaluation is not done by epochs or if it's not time to evaluate in this epoch, the method returns without performing any action. Otherwise, it performs an evaluation of the model on the validation dataset.
 
         Args:
-            runner (Runner): Instancia del corredor de entrenamiento.
+            runner (Runner): Instance of the training runner.
         """
-        # Si la evaluación no se realiza por épocas o si no es tiempo de evaluar en esta época, retorna sin hacer nada
+
+        # If evaluation is not done by epochs or if it's not time to evaluate in this epoch, return without doing
+        # anything
         if not self.by_epoch or not self.every_n_epochs(runner, self.interval):
             return
-        # Realiza la evaluación del modelo en el conjunto de datos de validación
+
+        # Perform model evaluation on the validation dataset
         from src.mmseg.apis import single_gpu_test
         runner.log_buffer.clear()
         results = single_gpu_test(runner.model, self.dataloader, show=False)
@@ -83,35 +74,26 @@ class EvalHook(Hook):
 
     def evaluate(self, runner, results):
         """
-        Llama a la función de evaluación del conjunto de datos.
+        Calls the dataset evaluation function.
 
         Args:
-            runner (Runner): Instancia del corredor de entrenamiento.
-            results (dict): Resultados de la evaluación del modelo en el conjunto de datos de validación.
+            runner (Runner): Instance of the training runner.
+            results (dict): Results of the model evaluation on the validation dataset.
 
-        Llama a la función de evaluación del conjunto de datos de validación utilizando los resultados obtenidos durante la evaluación del modelo. Los resultados de la evaluación se almacenan en el buffer de registro del corredor para su posterior visualización.
+        Calls the dataset evaluation function using the results obtained during the model evaluation. Evaluation results are stored in the runner's log buffer for later visualization.
         """
-        # Llama a la función de evaluación del conjunto de datos de validación
+
+        # Call the dataset evaluation function
         eval_res = self.dataloader.dataset.evaluate(
             results, logger=runner.logger, **self.eval_kwargs)
-        # Almacena los resultados de la evaluación en el buffer de registro del corredor
+
+        # Store the evaluation results in the runner's log buffer
         for name, val in eval_res.items():
             runner.log_buffer.output[name] = val
         runner.log_buffer.ready = True
 
 
 class DistEvalHook(EvalHook):
-    """
-    Gancho de evaluación distribuida.
-
-    Atributos:
-        dataloader (DataLoader): Un DataLoader de PyTorch.
-        interval (int): Intervalo de evaluación (por épocas). Por defecto: 1.
-        tmpdir (str | None): Directorio temporal para guardar los resultados de todos los
-            procesos. Por defecto: None.
-        gpu_collect (bool): Si se debe utilizar GPU o CPU para recopilar los resultados.
-            Por defecto: False.
-    """
 
     def __init__(self,
                  dataloader,
@@ -120,21 +102,21 @@ class DistEvalHook(EvalHook):
                  by_epoch=False,
                  **eval_kwargs):
         """
-        Inicializa el gancho de evaluación distribuida.
+        Initializes the distributed evaluation hook.
 
         Args:
-            dataloader (DataLoader): Un DataLoader de PyTorch.
-            interval (int): Intervalo de evaluación (por épocas). Por defecto: 1.
-            gpu_collect (bool): Si se debe utilizar GPU o CPU para recopilar los resultados.
-                Por defecto: False.
-            by_epoch (bool): Si la evaluación se realiza por época o por iteración. 
-                Por defecto: False.
-            **eval_kwargs: Argumentos adicionales para la evaluación.
+            dataloader (DataLoader): A PyTorch DataLoader.
+            interval (int): Evaluation interval (in epochs). Default: 1.
+            gpu_collect (bool): Whether to use GPU or CPU to collect results. Default: False.
+            by_epoch (bool): Whether evaluation is done per epoch or per iteration. Default: False.
+            **eval_kwargs: Additional arguments for evaluation.
         """
+
         if not isinstance(dataloader, DataLoader):
             raise TypeError(
                 'dataloader must be a pytorch DataLoader, but got {}'.format(
                     type(dataloader)))
+
         self.dataloader = dataloader
         self.interval = interval
         self.gpu_collect = gpu_collect
@@ -143,64 +125,71 @@ class DistEvalHook(EvalHook):
 
     def after_train_iter(self, runner):
         """
-        Gancho que se ejecuta después de cada iteración de entrenamiento.
+        Hook that runs after each training iteration.
 
-        Este gancho se utiliza para realizar la evaluación del modelo en el conjunto de datos de evaluación
-        después de cada iteración de entrenamiento, si se ha especificado un intervalo para la evaluación.
+        This hook is used to perform model evaluation on the validation dataset
+        after each training iteration, if an evaluation interval is specified.
 
         Args:
-            runner: El objeto `Runner` actual que gestiona el entrenamiento.
+            runner: The current `Runner` object managing the training.
         """
-        # Verifica si se debe realizar la evaluación en esta iteración, según el intervalo y el modo
+
+        # Checks if evaluation should be performed at this iteration, based on the interval and mode
         if self.by_epoch or not self.every_n_iters(runner, self.interval):
-            # Si no es el momento de la evaluación, sale del gancho
+            # If it's not time for evaluation, exits the hook
             return
-        # Importa la función multi_gpu_test del módulo mmseg.apis para realizar la evaluación
+
+        # Imports the multi_gpu_test function from the mmseg.apis module to perform evaluation
         from src.mmseg.apis import multi_gpu_test
-        # Limpia el buffer de registro del runner
+        # Clears the runner's log buffer
         runner.log_buffer.clear()
-        # Realiza la evaluación en múltiples GPU
-        # Se pasan al método multi_gpu_test el modelo, el dataloader de evaluación, la carpeta temporal para almacenar los resultados 
-        # y el indicador para colectar resultados en GPU
+
+        # Performs evaluation on multiple GPUs The multi_gpu_test method is passed the model, the validation
+        # dataloader, the temporary folder to store results, and the flag to collect results on GPU
         results = multi_gpu_test(
             runner.model,
             self.dataloader,
             tmpdir=osp.join(runner.work_dir, '.eval_hook'),
             gpu_collect=self.gpu_collect)
-        # Si es el proceso con rango 0 (por lo general el proceso principal), se imprime un salto de línea
-        # y se llama al método evaluate para procesar los resultados de la evaluación
+
+        # If it's the process with rank 0 (usually the master process), prints a newline
+        # and calls the evaluate method to process evaluation results
         if runner.rank == 0:
             print('\n')
             self.evaluate(runner, results)
 
     def after_train_epoch(self, runner):
         """
-        Gancho que se ejecuta después de cada época de entrenamiento.
+        Hook that runs after each training epoch.
 
-        Este gancho se utiliza para realizar la evaluación del modelo en el conjunto de datos de evaluación
-        después de cada época de entrenamiento, si se ha especificado un intervalo para la evaluación.
+        This hook is used to perform model evaluation on the validation dataset
+        after each training epoch, if an evaluation interval is specified.
 
         Args:
-            runner: El objeto `Runner` actual que gestiona el entrenamiento.
+            runner: The current `Runner` object managing the training.
         """
-        # Verifica si se debe realizar la evaluación en esta iteración, según el intervalo y el modo
+
+        # Checks if evaluation should be performed at this epoch, based on the interval and mode
         if not self.by_epoch or not self.every_n_epochs(runner, self.interval):
-            # Si no es el momento de la evaluación, sale del gancho
+            # If it's not time for evaluation, exits the hook
             return
-        # Importa la función multi_gpu_test del módulo mmseg.apis para realizar la evaluación
+
+        # Imports the multi_gpu_test function from the mmseg.apis module to perform evaluation
         from src.mmseg.apis import multi_gpu_test
-        # Limpia el buffer de registro del runner
+        # Clears the runner's log buffer
         runner.log_buffer.clear()
-        # Realiza la evaluación en múltiples GPU.
-        # Se pasan al método multi_gpu_test el modelo, el dataloader de evaluación, la carpeta temporal
-        # para almacenar los resultados y el indicador para colectar resultados en GPU.
+
+        # Performs evaluation on multiple GPUs
+        # The multi_gpu_test method is passed the model, the validation dataloader, the temporary folder
+        # to store results, and the flag to collect results on GPU.
         results = multi_gpu_test(
             runner.model,
             self.dataloader,
             tmpdir=osp.join(runner.work_dir, '.eval_hook'),
             gpu_collect=self.gpu_collect)
-        # Si es el proceso con rango 0 (por lo general el proceso principal), se imprime un salto de línea
-        # y se llama al método evaluate para procesar los resultados de la evaluación.
+
+        # If it's the process with rank 0 (usually the master process), prints a newline
+        # and calls the evaluate method to process evaluation results.
         if runner.rank == 0:
             print('\n')
             self.evaluate(runner, results)

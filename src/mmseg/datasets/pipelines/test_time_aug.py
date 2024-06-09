@@ -9,9 +9,9 @@ from src.mmseg.datasets.pipelines.compose import Compose
 @PIPELINES.register_module()
 class MultiScaleFlipAug(object):
     """
-    Aumento de tiempo de prueba con múltiples escalas y volteo.
+    Test-time augmentation with multiple scales and flipping.
 
-    Una configuración de ejemplo es la siguiente:
+    An example configuration is as follows:
 
     .. code-block::
 
@@ -27,8 +27,8 @@ class MultiScaleFlipAug(object):
             dict(type='Collect', keys=['img']),
         ]
 
-    Después de MultiScaleFlipAug con la configuración anterior, los resultados están envueltos
-    en listas de la misma longitud de la siguiente manera:
+    After MultiScaleFlipAug with the above configuration, the results are wrapped
+    in lists of the same length as follows:
 
     .. code-block::
 
@@ -41,68 +41,77 @@ class MultiScaleFlipAug(object):
         )
 
     Args:
-        transforms (list[dict]): Transformaciones para aplicar en cada aumento.
-        img_scale (None | tuple | list[tuple]): Escalas de imagen para el redimensionamiento.
-        img_ratios (float | list[float]): Razones de imagen para el redimensionamiento
-        flip (bool): Si aplicar el aumento de volteo. Por defecto: False.
-        flip_direction (str | list[str]): Direcciones de aumento de volteo,
-            las opciones son "horizontal" y "vertical". Si flip_direction es una lista,
-            se aplicarán múltiples aumentos de volteo.
-            No tiene efecto cuando flip == False. Por defecto: "horizontal".
+        transforms (list[dict]): Transformations to apply in each augmentation.
+        img_scale (None | tuple | list[tuple]): Image scales for resizing.
+        img_ratios (float | list[float]): Image ratios for resizing.
+        flip (bool): Whether to apply flip augmentation. Default: False.
+        flip_direction (str | list[str]): Flip augmentation directions,
+            options are "horizontal" and "vertical". If flip_direction is a list,
+            multiple flip augmentations will be applied. It has no effect when flip == False. Default: "horizontal".
     """
+
     def __init__(self,
                  transforms,
                  img_scale,
                  img_ratios=None,
                  flip=False,
                  flip_direction='horizontal'):
+
         self.transforms = Compose(transforms)
+
         if img_ratios is not None:
             img_ratios = img_ratios if isinstance(img_ratios,
                                                   list) else [img_ratios]
             assert mmcv.is_list_of(img_ratios, float)
+
         if img_scale is None:
-            # Modo 1: Dado img_scale=None y un rango de ratio de imagen
+            # Mode 1: Given img_scale=None and an image ratio range
             self.img_scale = None
             assert mmcv.is_list_of(img_ratios, float)
         elif isinstance(img_scale, tuple) and mmcv.is_list_of(
                 img_ratios, float):
             assert len(img_scale) == 2
-            # Modo 2: Dado una escala y un rango de ratio de imagen
+            # Mode 2: Given a scale and an image ratio range
             self.img_scale = [(int(img_scale[0] * ratio),
                                int(img_scale[1] * ratio))
                               for ratio in img_ratios]
         else:
-            # Modo 3: Dadas múltiples escalas
+            # Mode 3: Given multiple scales
             self.img_scale = img_scale if isinstance(img_scale,
                                                      list) else [img_scale]
+
         assert mmcv.is_list_of(self.img_scale, tuple) or self.img_scale is None
+
         self.flip = flip
         self.img_ratios = img_ratios
         self.flip_direction = flip_direction if isinstance(
             flip_direction, list) else [flip_direction]
+
         assert mmcv.is_list_of(self.flip_direction, str)
+
         if not self.flip and self.flip_direction != ['horizontal']:
             warnings.warn(
                 'flip_direction has no effect when flip is set to False')
+
         if (self.flip
                 and not any([t['type'] == 'RandomFlip' for t in transforms])):
             warnings.warn(
                 'flip has no effect when RandomFlip is not in transforms')
 
-
     def __call__(self, results):
         """
-        Llama a la función para aplicar transformaciones de aumento de tiempo de prueba a los resultados.
+        Calls the function to apply test-time augmentation transformations to the results.
 
         Args:
-            results (dict): Diccionario de resultados que contiene los datos para transformar.
+            results (dict): Results dictionary containing the data to transform.
 
         Returns:
-           dict[str: list]: Los datos aumentados, donde cada valor está envuelto
-               en una lista.
+           dict[str: list]: Augmented data, where each value is wrapped
+               in a list.
         """
+
         aug_data = []
+
         if self.img_scale is None and mmcv.is_list_of(self.img_ratios, float):
             h, w = results['img'].shape[:2]
             img_scale = [(int(w * ratio), int(h * ratio))
@@ -110,6 +119,7 @@ class MultiScaleFlipAug(object):
         else:
             img_scale = self.img_scale
         flip_aug = [False, True] if self.flip else [False]
+
         for scale in img_scale:
             for flip in flip_aug:
                 for direction in self.flip_direction:
@@ -119,13 +129,15 @@ class MultiScaleFlipAug(object):
                     _results['flip_direction'] = direction
                     data = self.transforms(_results)
                     aug_data.append(data)
-        # Lista de diccionarios a diccionario de listas
+
+        # List of dictionaries to dictionary of lists
         aug_data_dict = {key: [] for key in aug_data[0]}
+
         for data in aug_data:
             for key, val in data.items():
                 aug_data_dict[key].append(val)
-        return aug_data_dict
 
+        return aug_data_dict
 
     def __repr__(self):
         repr_str = self.__class__.__name__

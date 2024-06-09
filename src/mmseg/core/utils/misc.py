@@ -1,13 +1,13 @@
 def add_prefix(inputs, prefix):
     """
-    Agrega un prefijo a un diccionario.
+    Adds a prefix to a dictionary.
 
     Args:
-        inputs (dict): El diccionario de entrada con claves de tipo str.
-        prefix (str): El prefijo a agregar.
+        inputs (dict): The input dictionary with keys of type str.
+        prefix (str): The prefix to add.
 
     Returns:
-        dict: El diccionario con las claves actualizadas con el ``prefijo``.
+        dict: The dictionary with keys updated with the ``prefix``.
     """
 
     outputs = dict()

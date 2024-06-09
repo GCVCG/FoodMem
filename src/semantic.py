@@ -2,7 +2,7 @@ import argparse
 
 from mmcv.utils import DictAction
 
-from FoodSAM_tools.predict_semantic_mask import semantic_predict
+from src.FoodSAM_tools.predict_semantic_mask import semantic_predict
 
 parser = argparse.ArgumentParser(
     description=(
@@ -85,9 +85,12 @@ parser.add_argument(
     help="vis pred mask",
 )
 
+
 def main(args: argparse.Namespace) -> None:
-    semantic_predict(data_root=args.data_root, img_dir=args.img_dir, ann_dir=args.ann_dir, config=args.semantic_config, options=args.options, aug_test=args.aug_test,
-                     checkpoint=args.semantic_checkpoint, eval_options=args.eval_options, color_list_path=args.color_list_path, show_vis=args.show_vis, img_path=args.img_path,
+    semantic_predict(data_root=args.data_root, img_dir=args.img_dir, ann_dir=args.ann_dir, config=args.semantic_config,
+                     options=args.options, aug_test=args.aug_test,
+                     checkpoint=args.semantic_checkpoint, eval_options=args.eval_options,
+                     color_list_path=args.color_list_path, show_vis=args.show_vis, img_path=args.img_path,
                      output_path=args.out_path)
 
 

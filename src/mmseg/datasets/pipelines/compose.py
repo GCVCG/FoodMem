@@ -8,15 +8,17 @@ from src.mmseg.datasets.builder import PIPELINES
 @PIPELINES.register_module()
 class Compose(object):
     """
-    Compone múltiples transformaciones secuencialmente.
+    Composes multiple transformations sequentially.
 
     Args:
-        transforms (Sequence[dict | callable]): Secuencia de objetos de transformación o
-            configuraciones de diccionario para componer.
+        transforms (Sequence[dict | callable]): Sequence of transformation objects or
+            dictionary configurations to compose.
     """
+
     def __init__(self, transforms):
         assert isinstance(transforms, collections.abc.Sequence)
         self.transforms = []
+
         for transform in transforms:
             if isinstance(transform, dict):
                 transform = build_from_cfg(transform, PIPELINES)
@@ -26,16 +28,15 @@ class Compose(object):
             else:
                 raise TypeError('transform must be callable or a dict')
 
-
     def __call__(self, data):
         """
-        Llama a la función para aplicar las transformaciones secuencialmente.
+        Calls the function to apply the transformations sequentially.
 
         Args:
-            data (dict): Un diccionario de resultados que contiene los datos para transformar.
+            data (dict): A dictionary of results containing the data to transform.
 
         Returns:
-           dict: Datos transformados.
+           dict: Transformed data.
         """
 
         for t in self.transforms:
@@ -43,10 +44,13 @@ class Compose(object):
             if data is None:
                 return None
         return data
+
     def __repr__(self):
         format_string = self.__class__.__name__ + '('
+
         for t in self.transforms:
             format_string += '\n'
             format_string += f'    {t}'
         format_string += '\n)'
+
         return format_string

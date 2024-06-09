@@ -10,15 +10,16 @@ from src.mmseg.datasets.builder import PIPELINES
 
 def to_tensor(data):
     """
-    Convierte objetos de varios tipos de Python a :obj:`torch.Tensor`.
+    Converts objects of various Python types to :obj:`torch.Tensor`.
 
-    Se admiten los siguientes tipos: :class:`numpy.ndarray`, :class:`torch.Tensor`,
-    :class:`Sequence`, :class:`int` y :class:`float`.
+    The following types are supported: :class:`numpy.ndarray`, :class:`torch.Tensor`,
+    :class:`Sequence`, :class:`int`, and :class:`float`.
 
     Args:
-        data (torch.Tensor | numpy.ndarray | Sequence | int | float): Datos a
-            ser convertidos.
+        data (torch.Tensor | numpy.ndarray | Sequence | int | float): Data to
+            be converted.
     """
+
     if isinstance(data, torch.Tensor):
         return data
     elif isinstance(data, np.ndarray):
@@ -33,177 +34,183 @@ def to_tensor(data):
         raise TypeError(f'type {type(data)} cannot be converted to tensor.')
 
 
+
 @PIPELINES.register_module()
 class ToTensor(object):
     """
-    Convierte algunos resultados a :obj:`torch.Tensor` mediante claves dadas.
+    Converts some results to :obj:`torch.Tensor` given keys.
 
     Args:
-        keys (Sequence[str]): Claves que deben convertirse a Tensor.
+        keys (Sequence[str]): Keys that should be converted to Tensor.
     """
+
     def __init__(self, keys):
         self.keys = keys
 
-
     def __call__(self, results):
         """
-        Función de llamada para convertir datos en resultados a :obj:`torch.Tensor`.
+        Callable function to convert data in results to :obj:`torch.Tensor`.
 
         Args:
-            results (dict): Diccionario de resultados que contiene los datos a convertir.
+            results (dict): Dictionary of results containing data to convert.
 
         Returns:
-            dict: El diccionario de resultados contiene los datos convertidos
-                a :obj:`torch.Tensor`.
+            dict: Dictionary of results containing data converted to :obj:`torch.Tensor`.
         """
+
         for key in self.keys:
             results[key] = to_tensor(results[key])
+
         return results
 
-
     def __repr__(self):
+
         return self.__class__.__name__ + f'(keys={self.keys})'
 
 
 @PIPELINES.register_module()
 class ImageToTensor(object):
     """
-    Convierte la imagen a :obj:`torch.Tensor` mediante claves dadas.
+    Converts the image to :obj:`torch.Tensor` given keys.
 
-    El orden de dimensiones de la imagen de entrada es (H, W, C). El pipeline convertirá
-    a (C, H, W). Si solo se proporcionan 2 dimensiones (H, W), la salida sería
-    (1, H, W).
+    The input image dimensions order is (H, W, C). The pipeline will convert it to (C, H, W).
+    If only 2 dimensions (H, W) are provided, the output would be (1, H, W).
 
     Args:
-        keys (Sequence[str]): Clave de las imágenes que se convertirán a Tensor.
+        keys (Sequence[str]): Key of the images to be converted to Tensor.
     """
+
     def __init__(self, keys):
         self.keys = keys
 
-
     def __call__(self, results):
         """
-        Llama a la función para convertir la imagen en los resultados a :obj:`torch.Tensor` y
-        transpone el orden de los canales.
+        Callable function to convert the image in the results to :obj:`torch.Tensor` and
+        transpose the channel order.
 
         Args:
-            results (dict): Diccionario de resultados que contiene los datos de imagen a convertir.
+            results (dict): Dictionary of results containing image data to convert.
 
         Returns:
-            dict: El diccionario de resultados contiene la imagen convertida
-                a :obj:`torch.Tensor` y transpuesta a un orden (C, H, W).
+            dict: Dictionary of results containing the image converted to :obj:`torch.Tensor`
+                and transposed to an order (C, H, W).
         """
+
         for key in self.keys:
             img = results[key]
+
             if len(img.shape) < 3:
                 img = np.expand_dims(img, -1)
+
             results[key] = to_tensor(img.transpose(2, 0, 1))
+
         return results
 
-
     def __repr__(self):
+
         return self.__class__.__name__ + f'(keys={self.keys})'
+
 
 
 @PIPELINES.register_module()
 class Transpose(object):
     """
-    Transpone algunos resultados mediante claves dadas.
+    Transposes some results given keys.
 
     Args:
-        keys (Sequence[str]): Claves de los resultados que se transpondrán.
-        order (Sequence[int]): Orden de transposición.
+        keys (Sequence[str]): Keys of the results to be transposed.
+        order (Sequence[int]): Transpose order.
     """
+
     def __init__(self, keys, order):
         self.keys = keys
         self.order = order
 
-
     def __call__(self, results):
         """
-        Llama a la función para convertir la imagen en los resultados a :obj:`torch.Tensor` y
-        transpone el orden de los canales.
+        Callable function to transpose the data in the results dictionary.
 
         Args:
-            results (dict): Diccionario de resultados que contiene los datos de imagen a convertir.
+            results (dict): Dictionary of results containing data to be transposed.
 
         Returns:
-            dict: El diccionario de resultados contiene la imagen convertida
-                a :obj:`torch.Tensor` y transpuesta a un orden (C, H, W).
+            dict: Dictionary of results containing the data transposed according to the specified order.
         """
+
         for key in self.keys:
             results[key] = results[key].transpose(self.order)
+
         return results
 
-
     def __repr__(self):
+
         return self.__class__.__name__ + \
-               f'(keys={self.keys}, order={self.order})'
+            f'(keys={self.keys}, order={self.order})'
 
 
 @PIPELINES.register_module()
 class ToDataContainer(object):
     """
-    Convierte los resultados a :obj:`mmcv.DataContainer` mediante campos dados.
+    Converts the results to :obj:`mmcv.DataContainer` using given fields.
 
     Args:
-        fields (Sequence[dict]): Cada campo es un diccionario como
-            ``dict(key='xxx', **kwargs)``. La ``key`` en el resultado se
-            convertirá a :obj:`mmcv.DataContainer` con ``**kwargs``.
-            Por defecto: ``(dict(key='img',
-            stack=True), dict(key='gt_semantic_seg'))``.
+        fields (Sequence[dict]): Each field is a dictionary like
+            ``dict(key='xxx', **kwargs)``. The ``key`` in the result will be
+            converted to :obj:`mmcv.DataContainer` with ``**kwargs``.
+            Default: ``(dict(key='img', stack=True), dict(key='gt_semantic_seg'))``.
     """
+
     def __init__(self,
                  fields=(dict(key='img',
                               stack=True), dict(key='gt_semantic_seg'))):
         self.fields = fields
 
-
     def __call__(self, results):
         """
-        Llama a la función para convertir los datos en los resultados a
-        :obj:`mmcv.DataContainer`.
+        Callable function to convert the data in the results to :obj:`mmcv.DataContainer`.
 
         Args:
-            results (dict): Diccionario de resultados que contiene los datos a convertir.
+            results (dict): Dictionary of results containing the data to be converted.
 
         Returns:
-            dict: El diccionario de resultados contiene los datos convertidos a
-                :obj:`mmcv.DataContainer`.
+            dict: Dictionary of results containing the data converted to :obj:`mmcv.DataContainer`.
         """
+
         for field in self.fields:
             field = field.copy()
             key = field.pop('key')
             results[key] = DC(results[key], **field)
+
         return results
 
-
     def __repr__(self):
+
         return self.__class__.__name__ + f'(fields={self.fields})'
 
 
 @PIPELINES.register_module()
 class DefaultFormatBundle(object):
     """
-    Paquete de formato predeterminado.
+    Default formatting bundle.
 
-    Simplifica el pipeline de formato de campos comunes, incluidos "img"
-    y "gt_semantic_seg". Estos campos se formatean de la siguiente manera.
+    Simplifies the formatting pipeline for common fields, including "img"
+    and "gt_semantic_seg". These fields are formatted as follows.
 
-    - img: (1)transpuesto, (2) a tensor, (3) a DataContainer (stack=True)
-    - gt_semantic_seg: (1)dimensión sin comprimir dim-0 (2)a tensor,
-                       (3)a DataContainer (stack=True)
+    - img: (1) transposed, (2) to tensor, (3) to DataContainer (stack=True)
+    - gt_semantic_seg: (1) uncompressed dim-0 dimension, (2) to tensor,
+                       (3) to DataContainer (stack=True)
     """
+
     def __call__(self, results):
         """
-        Llama a la función para transformar y formatear campos comunes en los resultados.
+        Callable function to transform and format common fields in the results.
 
         Args:
-            results (dict): Diccionario de resultados que contiene los datos a convertir.
+            results (dict): Dictionary of results containing the data to be formatted.
 
         Returns:
-            dict: El diccionario de resultados contiene los datos que se formatean con
-                el paquete predeterminado.
+            dict: Dictionary of results containing the data formatted with
+                the default bundle.
         """
 
         if 'img' in results:
@@ -212,57 +219,60 @@ class DefaultFormatBundle(object):
                 img = np.expand_dims(img, -1)
             img = np.ascontiguousarray(img.transpose(2, 0, 1))
             results['img'] = DC(to_tensor(img), stack=True)
+
         if 'gt_semantic_seg' in results:
             # convert to long
             results['gt_semantic_seg'] = DC(
                 to_tensor(results['gt_semantic_seg'][None,
-                                                     ...].astype(np.int64)),
+                ...].astype(np.int64)),
                 stack=True)
+
         return results
 
-
     def __repr__(self):
+
         return self.__class__.__name__
 
 
 @PIPELINES.register_module()
 class Collect(object):
     """
-    Recopila datos del cargador relevantes para la tarea específica.
+    Collects relevant loader data for the specific task.
 
-    Esta suele ser la última etapa del pipeline del cargador de datos. 
-    Típicamente, las claves se establecen en un subconjunto de "img", "gt_semantic_seg".
+    This is typically the last stage of the data loader pipeline.
+    Typically, keys are set to a subset of "img", "gt_semantic_seg".
 
-    El elemento "img_meta" siempre se completa. El contenido del diccionario "img_meta"
-    depende de "meta_keys". Por defecto, esto incluye:
+    The "img_meta" item is always populated. The content of the "img_meta" dictionary
+    depends on "meta_keys". By default, this includes:
 
-        - "img_shape": forma de la imagen de entrada a la red como una tupla
-            (h, w, c). Tenga en cuenta que las imágenes pueden tener relleno de ceros en la parte inferior/derecha
-            si el tensor del lote es más grande que esta forma.
+        - "img_shape": shape of input image to the network as a tuple
+            (h, w, c). Note that images may have zero padding at the bottom/right
+            if the batch tensor is larger than this shape.
 
-        - "scale_factor": un flotante que indica la escala de preprocesamiento
+        - "scale_factor": a float indicating the preprocessing scale
 
-        - "flip": un booleano que indica si se utilizó una transformación de volteo de imagen
+        - "flip": a boolean indicating if an image flip transformation was used
 
-        - "filename": ruta al archivo de imagen
+        - "filename": path to image file
 
-        - "ori_shape": forma original de la imagen como una tupla (h, w, c)
+        - "ori_shape": original shape of the image as a tuple (h, w, c)
 
-        - "pad_shape": forma de la imagen después del relleno
+        - "pad_shape": shape of the image after padding
 
-        - "img_norm_cfg": un diccionario de información de normalización:
-            - media - sustracción de media por canal
-            - std - divisor de std por canal
-            - to_rgb - booleano que indica si bgr se convirtió a rgb
+        - "img_norm_cfg": a dictionary of normalization information:
+            - mean - per-channel mean subtraction
+            - std - per-channel std divisor
+            - to_rgb - boolean indicating if bgr was converted to rgb
 
     Args:
-        keys (Sequence[str]): Claves de los resultados que se recopilarán en ``data``.
-        meta_keys (Sequence[str], opcional): Claves meta que se convertirán en
-            ``mmcv.DataContainer`` y se recopilarán en ``data[img_metas]``.
-            Por defecto: ``('filename', 'ori_filename', 'ori_shape', 'img_shape',
+        keys (Sequence[str]): Keys from the results to be collected into ``data``.
+        meta_keys (Sequence[str], optional): Meta keys to be converted to
+            ``mmcv.DataContainer`` and collected into ``data[img_metas]``.
+            Default: ``('filename', 'ori_filename', 'ori_shape', 'img_shape',
             'pad_shape', 'scale_factor', 'flip', 'flip_direction',
             'img_norm_cfg')``
     """
+
     def __init__(self,
                  keys,
                  meta_keys=('filename', 'ori_filename', 'ori_shape',
@@ -273,26 +283,32 @@ class Collect(object):
 
     def __call__(self, results):
         """
-        Llama a la función para recopilar claves en los resultados. Las claves en ``meta_keys``
-        se convertirán en :obj:mmcv.DataContainer.
+        Callable function to collect keys into results. Keys in ``meta_keys``
+        will be converted to :obj:mmcv.DataContainer.
 
         Args:
-            results (dict): Diccionario de resultados que contiene los datos a recopilar.
+            results (dict): Dictionary of results containing the data to be collected.
 
         Returns:
-            dict: El diccionario de resultados contiene las siguientes claves
-                - claves en ``self.keys``
+            dict: Dictionary of results containing the following keys
+                - keys in ``self.keys``
                 - ``img_metas``
         """
+
         data = {}
         img_meta = {}
+
         for key in self.meta_keys:
             img_meta[key] = results[key]
         data['img_metas'] = DC(img_meta, cpu_only=True)
+
         for key in self.keys:
             data[key] = results[key]
+
         return data
 
     def __repr__(self):
+
         return self.__class__.__name__ + \
-               f'(keys={self.keys}, meta_keys={self.meta_keys})'
+            f'(keys={self.keys}, meta_keys={self.meta_keys})'
+

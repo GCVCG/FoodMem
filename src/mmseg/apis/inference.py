@@ -10,127 +10,146 @@ from src.mmseg.models import build_segmentor
 
 def init_segmentor(config, checkpoint=None, device='cuda:0'):
     """
-    Inicializa un segmentador a partir de un archivo de configuración.
+    Initialize a segmentor from a configuration file.
 
     Args:
-        config (str or :obj:`mmcv.Config`): Ruta del archivo de configuración o el objeto de configuración.
-        checkpoint (str, opcional): Ruta del punto de control. Si se deja en None, el modelo no cargará ningún peso.
-        device (str, opcional): Opción del dispositivo CPU/CUDA. Por defecto 'cuda:0'. Usa 'cpu' para cargar el modelo en la CPU.
+        config (str or :obj:`mmcv.Config`): Path to the configuration file or the configuration object.
+        checkpoint (str, optional): Path to the checkpoint file. If None, the model will not load any weights.
+        device (str, optional): Device option CPU/CUDA. Default is 'cuda:0'. Use 'cpu' to load the model on CPU.
 
     Returns:
-        nn.Module: El segmentador construido.
+        nn.Module: The constructed segmentor.
     """
-    # Verifica si la configuración es una cadena de texto (ruta de archivo) o un objeto Config
+
+    # Check if config is a string (file path) or a Config object
     if isinstance(config, str):
         config = mmcv.Config.fromfile(config)
     elif not isinstance(config, mmcv.Config):
         raise TypeError('config must be a filename or Config object, '
                         'but got {}'.format(type(config)))
-    # Establece los atributos pretrained y train_cfg de la configuración del modelo como None para evitar cargar pesos o configuraciones de entrenamiento
+
+    # Set the pretrained and train_cfg attributes to None to avoid loading weights or training configurations
     config.model.pretrained = None
     config.model.train_cfg = None
-    # Construye el segmentador a partir de la configuración del modelo
+
+    # Build the segmentor from the model configuration
     model = build_segmentor(config.model, test_cfg=config.get('test_cfg'))
-    # Si se proporciona un punto de control, carga los pesos del modelo y los metadatos
+
+    # If a checkpoint is provided, load the model weights and metadata
     if checkpoint is not None:
         checkpoint = load_checkpoint(model, checkpoint, map_location=device)
         model.CLASSES = checkpoint['meta']['CLASSES']
         model.PALETTE = checkpoint['meta']['PALETTE']
-    # Guarda la configuración en el modelo para mayor conveniencia
+
+    # Save the configuration in the model for convenience
     model.cfg = config
-    # Mueve el modelo al dispositivo especificado y lo pone en modo de evaluación
+
+    # Move the model to the specified device and set it to evaluation mode
     model.to(device)
     model.eval()
-    
+
     return model
 
 
 class LoadImage:
-    """Un pipeline simple para cargar imágenes."""
+    """A simple pipeline to load images."""
 
     def __call__(self, results):
         """
-        Función de llamada para cargar imágenes en los resultados.
+        Call function to load images into the results.
 
         Args:
-            results (dict): Un diccionario de resultados que contiene el nombre de archivo
-                de la imagen que se va a leer.
+            results (dict): A results dictionary containing the filename
+                of the image to be read.
 
         Returns:
-            dict: Se devolverán los ``results`` que contienen la imagen cargada.
+            dict: The ``results`` dictionary updated with the loaded image and its metadata.
         """
-        # Verifica si la imagen en los resultados es una cadena de texto (ruta de archivo)
+
+        # Check if the image path in results is a string (file path)
         if isinstance(results['img'], str):
             results['filename'] = results['img']
             results['ori_filename'] = results['img']
-        # Si no es una cadena de texto, establece los nombres de archivo como None
+        # If it is not a string, set the filenames to None
         else:
             results['filename'] = None
             results['ori_filename'] = None
-        # Lee la imagen utilizando mmcv
+
+        # Read the image using mmcv
         img = mmcv.imread(results['img'])
         results['img'] = img
-        # Guarda la forma original y la forma de la imagen cargada en los resultados
+
+        # Save the original shape and the shape of the loaded image in results
         results['img_shape'] = img.shape
         results['ori_shape'] = img.shape
-        
+
         return results
 
 
 def inference_segmentor(model, img):
     """
-    Infiere imagen(es) con el segmentador.
+    Infer image(s) with the segmentor.
 
     Args:
-        model (nn.Module): El segmentador cargado.
-        img (str/ndarray or list[str/ndarray]): Archivos de imagen o imágenes cargadas.
+        model (nn.Module): The loaded segmentor.
+        img (str/ndarray or list[str/ndarray]): Image file(s) or loaded images.
 
     Returns:
-        (list[Tensor]): El resultado de segmentación.
+        list[Tensor]: The segmentation result.
     """
-    # Obtiene la configuración del modelo
+
+    # Get the model configuration
     cfg = model.cfg
-    # Obtiene el dispositivo del modelo
+
+    # Get the device of the model
     device = next(model.parameters()).device
-    # Construye el pipeline de datos de prueba
+
+    # Build the test data pipeline
     test_pipeline = [LoadImage()] + cfg.data.test.pipeline[1:]
     test_pipeline = Compose(test_pipeline)
-    # Prepara los datos
+
+    # Prepare the data
     data = dict(img=img)
     data = test_pipeline(data)
     data = collate([data], samples_per_gpu=1)
-    # Si el modelo está en GPU, distribuye los datos en la GPU especificada
+
+    # If the model is on GPU, distribute the data to the specified GPU
     if next(model.parameters()).is_cuda:
         data = scatter(data, [device])[0]
-    # Si el modelo está en CPU, establece los metadatos de la imagen
+    # If the model is on CPU, set image metadata
     else:
         data['img_metas'] = [i.data[0] for i in data['img_metas']]
 
-    # Realiza la inferencia con el modelo
+    # Perform inference with the model
     with torch.no_grad():
         result = model(return_loss=False, rescale=True, **data)
-        
+
     return result
 
 
 def show_result_pyplot(model, img, result, palette=None, fig_size=(15, 10)):
     """
-    Visualiza los resultados de segmentación en la imagen.
+    Visualize segmentation results on the image using pyplot.
 
     Args:
-        model (nn.Module): El segmentador cargado.
-        img (str or np.ndarray): Nombre del archivo de imagen o imagen cargada.
-        result (list): El resultado de segmentación.
-        palette (list[list[int]]] | None): La paleta del mapa de segmentación.
-            Si se proporciona None, se generará una paleta aleatoria. 
-            Por defecto: None
-        fig_size (tuple): Tamaño de la figura de pyplot. Por defecto: (15, 10)
+        model (nn.Module): The loaded segmentor.
+        img (str or np.ndarray): Image file name or loaded image.
+        result (list): The segmentation result.
+        palette (list[list[int]]] | None): The palette of the segmentation map.
+            If None is provided, a random palette will be generated.
+            Default is None.
+        fig_size (tuple): Size of the pyplot figure. Default is (15, 10).
     """
+
+    # If the model is wrapped in nn.DataParallel, unwrap it
     if hasattr(model, 'module'):
         model = model.module
-    # Muestra los resultados de segmentación en la imagen
+
+    # Show segmentation results on the image
     img = model.show_result(img, result, palette=palette, show=False)
+
+    # Plot the image using pyplot
     plt.figure(figsize=fig_size)
     plt.imshow(mmcv.bgr2rgb(img))
-    #plt.show()
-    plt.savefig("demo.png")
+    # plt.show()
+    plt.savefig("demo.png")  # Save the plot to a file

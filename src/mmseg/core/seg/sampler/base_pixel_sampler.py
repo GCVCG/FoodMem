@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 
 
 class BasePixelSampler(metaclass=ABCMeta):
-    """Clase base del muestreador de píxeles."""
+    """Base class for pixel sampler."""
 
     def __init__(self, **kwargs):
         pass
@@ -10,5 +10,5 @@ class BasePixelSampler(metaclass=ABCMeta):
 
     @abstractmethod
     def sample(self, seg_logit, seg_label):
-        """Marcador de posición para la función de muestreo."""
+        """Placeholder for sampling function."""
         pass

@@ -23,44 +23,57 @@ PIPELINES = Registry('pipeline')
 
 
 def _concat_dataset(cfg, default_args=None):
-    """Construye un ConcatDataset."""
+    """Constructs a ConcatDataset."""
+
     from .dataset_wrappers import ConcatDataset
+
     img_dir = cfg['img_dir']
     ann_dir = cfg.get('ann_dir', None)
     split = cfg.get('split', None)
     num_img_dir = len(img_dir) if isinstance(img_dir, (list, tuple)) else 1
+
     if ann_dir is not None:
         num_ann_dir = len(ann_dir) if isinstance(ann_dir, (list, tuple)) else 1
     else:
         num_ann_dir = 0
+
     if split is not None:
         num_split = len(split) if isinstance(split, (list, tuple)) else 1
     else:
         num_split = 0
+
     if num_img_dir > 1:
         assert num_img_dir == num_ann_dir or num_ann_dir == 0
         assert num_img_dir == num_split or num_split == 0
     else:
         assert num_split == num_ann_dir or num_ann_dir <= 1
+
     num_dset = max(num_split, num_img_dir)
 
     datasets = []
+
     for i in range(num_dset):
         data_cfg = copy.deepcopy(cfg)
+
         if isinstance(img_dir, (list, tuple)):
             data_cfg['img_dir'] = img_dir[i]
+
         if isinstance(ann_dir, (list, tuple)):
             data_cfg['ann_dir'] = ann_dir[i]
+
         if isinstance(split, (list, tuple)):
             data_cfg['split'] = split[i]
+
         datasets.append(build_dataset(data_cfg, default_args))
 
     return ConcatDataset(datasets)
 
 
 def build_dataset(cfg, default_args=None):
-    """Construye conjuntos de datos."""
+    """Constructs datasets."""
+
     from .dataset_wrappers import ConcatDataset, RepeatDataset
+
     if isinstance(cfg, (list, tuple)):
         dataset = ConcatDataset([build_dataset(c, default_args) for c in cfg])
     elif cfg['type'] == 'RepeatDataset':
@@ -87,33 +100,30 @@ def build_dataloader(dataset,
                      dataloader_type='PoolDataLoader',
                      **kwargs):
     """
-    Construye DataLoader de PyTorch.
+    Constructs PyTorch DataLoader.
 
-    En el entrenamiento distribuido, cada GPU/proceso tiene un DataLoader.
-    En el entrenamiento no distribuido, solo hay un DataLoader para todas las GPUs.
+    In distributed training, each GPU/process has one DataLoader.
+    In non-distributed training, there's only one DataLoader for all GPUs.
 
     Args:
-        dataset (Dataset): Un conjunto de datos de PyTorch.
-        samples_per_gpu (int): Número de muestras de entrenamiento en cada GPU, es decir,
-            tamaño del lote de cada GPU.
-        workers_per_gpu (int): Cuántos subprocesos usar para la carga de datos
-            para cada GPU.
-        num_gpus (int): Número de GPUs. Solo se usa en el entrenamiento no distribuido.
-        dist (bool): Entrenamiento/prueba distribuido o no. Predeterminado: True.
-        shuffle (bool): Si mezclar los datos en cada época.
-            Predeterminado: True.
-        seed (int | None): Semilla a usar. Predeterminado: None.
-        drop_last (bool): Si omitir el último lote incompleto en la época.
-            Predeterminado: False
-        pin_memory (bool): Si usar pin_memory en DataLoader.
-            Predeterminado: True
-        dataloader_type (str): Tipo de DataLoader. Predeterminado: 'PoolDataLoader'
-        kwargs: cualquier argumento de palabra clave para inicializar DataLoader
+        dataset (Dataset): A PyTorch dataset.
+        samples_per_gpu (int): Number of training samples on each GPU, i.e., batch size of each GPU.
+        workers_per_gpu (int): How many subprocesses to use for data loading for each GPU.
+        num_gpus (int): Number of GPUs. Only used in non-distributed training.
+        dist (bool): Distributed training or not. Default: True.
+        shuffle (bool): Whether to shuffle the data at each epoch. Default: True.
+        seed (int | None): Seed to use. Default: None.
+        drop_last (bool): Whether to drop the last incomplete batch in an epoch. Default: False
+        pin_memory (bool): Whether to use pin_memory in DataLoader. Default: True
+        dataloader_type (str): DataLoader type. Default: 'PoolDataLoader'
+        kwargs: any keyword arguments to initialize DataLoader
 
     Returns:
-        DataLoader: Un DataLoader de PyTorch.
+        DataLoader: A PyTorch DataLoader.
     """
+
     rank, world_size = get_dist_info()
+
     if dist:
         sampler = DistributedSampler(
             dataset, world_size, rank, shuffle=shuffle)
@@ -155,16 +165,17 @@ def build_dataloader(dataset,
 
 def worker_init_fn(worker_id, num_workers, rank, seed):
     """
-    Función de inicialización del trabajador para el DataLoader.
+    Worker initialization function for DataLoader.
 
-    La semilla de cada trabajador es igual a num_worker * rank + worker_id + user_seed
+    The seed for each worker is num_worker * rank + worker_id + user_seed
 
     Args:
-        worker_id (int): ID del trabajador.
-        num_workers (int): Número de trabajadores.
-        rank (int): El rango del proceso actual.
-        seed (int): La semilla aleatoria a usar.
+        worker_id (int): Worker ID.
+        num_workers (int): Number of workers.
+        rank (int): The rank of the current process.
+        seed (int): The random seed to use.
     """
+
     worker_seed = num_workers * rank + worker_id + seed
     np.random.seed(worker_seed)
     random.seed(worker_seed)
