@@ -1,4 +1,4 @@
-# FoodMEM: A Fast and Precise Food Video Segmentation
+# FoodMem: A Fast and Precise Food Video Segmentation
 
 ---
 
@@ -10,14 +10,14 @@ Food segmentation is crucial in various research fields, such as health, agricul
 We used a single image input for simplicity. Our two-stage framework (a) shows the SETR framework, where it accepts an image and generates a mask, followed by (b) XMem2, which accepts the mask and a set of images as a given input and produces masks for all frames.
 
 ## Checkpoints
-Checkpoint must be added to the root dir (It must look like FoodMEM/ckpts/SETR_MLA/iter_80000.pth): https://drive.google.com/drive/folders/1Bxwj8FDGIdOnEnscjLwB7sisHlMHdo7H?usp=drive_link
-Saves must be added to the XMem2 dir (It must look like FoodMEM/XMem2/saves): https://drive.google.com/drive/folders/1pLiy-hyjzscLjmysexPDmp5DW3QJv0t4?usp=drive_link
+Checkpoint must be added to the root dir (It must look like FoodMem/ckpts/SETR_MLA/iter_80000.pth): https://drive.google.com/drive/folders/1Bxwj8FDGIdOnEnscjLwB7sisHlMHdo7H?usp=drive_link
+Saves must be added to the XMem2 dir (It must look like FoodMem/XMem2/saves): https://drive.google.com/drive/folders/1pLiy-hyjzscLjmysexPDmp5DW3QJv0t4?usp=drive_link
 
 ## Installation
 ````bash
-conda create -n FoodMEM python=3.8
+conda create -n FoodMem python=3.8
 
-conda activate FoodMEM   
+conda activate FoodMem   
 
 conda install pytorch==1.8.1 torchvision==0.9.1 torchaudio==0.8.1 cudatoolkit=11.3 -c pytorch -c conda-forge
 
