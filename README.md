@@ -1,9 +1,6 @@
-# FoodMem: A Fast and Precise Food Video Segmentation
+# FoodMem: Near Real-time and Precise Food Video Segmentation
 
 ---
-
-## Abstract
-Food segmentation is crucial in various research fields, such as health, agriculture, and food biotechnology. Segmenting and tracking different types of food in images or videos is undeniably a significant achievement, and it is currently considered a newly emerging topic in today’s society. Our study aims to find and develop a production-grade framework for segmenting and tracking various types of food in a given set of images or videos at high-quality performance and near-real-time speed with minimum hardware resources. This unlocks many challenges in real-world applications, such as food volume estimation, calories estimation, 3D reconstruction, augmented and virtual reality, or digital twins. We introduce FoodMem, a novel framework for segmenting food in 360º scenes. Our framework can effectively segment food portions in a given video and generate accurate masks. Most semantic segmentation models, especially for food-related tasks, have limitations that affect their performance, such as handling different camera locations that did not exist in the training set. Plus, the inference speed for individual images does not fit real-world applications, especially those that focus on video processing. In contrast, memory-based models are becoming popular in object-tracking applications because of their performance and speed. Still, they are limited since they rely on user input, such as the user drawing the input mask manually, which indicates a lack of automation. To overcome these limitations, we propose FoodMem, a novel Food Video segmentation framework that combines the (1) SETR model to generate segment one- or few- masks of the food portions in a given scene and (2) XMem++, a memory-based tracking model, to track the food masks in complex scenes. Our framework performs better than the state-of-the-art food segmentation frameworks in segmenting food in different camera-capturing locations, illumination, reflection, scene complexity, and food diversity, achieving a significant segmentation noise reduction, artifact elimination, and completing the missing parts. We also introduce an annotated food dataset, which covers new challenging use cases not found in previous benchmarks. We conduct extensive experiments on Nutrition5k and Vegetables and Fruits datasets, showing that FoodMem improves the state-of-the-art by 2.5% mean average precision in food video segmentation. Moreover, FoodMem is 58 times faster than the state-of-the-art on average for both datasets.
 
 ![FoodMem architecture](assets/FoodMemModel.png)
 
@@ -35,6 +32,20 @@ bash scripts/download_models.sh
 
 bash scripts/download_models_demo.sh
 ````
+## Or Run with Docker
+```bash
+# Build the docker image
+docker build -t gcvcg/foodmem .
+
+# Run in Docker
+docker run --gpus all -it --rm -e DISPLAY=:1 \ 
+-v /tmp/.X11-unix:/tmp/.X11-unix \
+-v /path/to/data:/vgdata \
+-v $(pwd)/workspace:/app/workspace gcvcg/foodmem bash run.sh /vgdata/$SCENEID
+
+# in case you want to run it in parallel.
+# ls -d /vgdata/*/* | parallel -I% --max-args 1  --jobs 1 bash run.sh %
+```
 
 ## Getting started
 ````bash
