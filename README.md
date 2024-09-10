@@ -1,7 +1,6 @@
 # FoodMem: Near Real-time and Precise Food Video Segmentation
 
 ---
-
 ![FoodMem architecture](assets/FoodMemModel.png)
 
 We used a single image input for simplicity. Our two-stage framework (a) shows the SETR framework, where it accepts an image and generates a mask, followed by (b) XMem2, which accepts the mask and a set of images as a given input and produces masks for all frames.
