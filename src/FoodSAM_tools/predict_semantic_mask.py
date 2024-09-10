@@ -13,7 +13,6 @@ from mmcv.parallel import MMDataParallel
 from src.mmseg.apis.inference import inference_segmentor, init_segmentor
 from src.mmseg.datasets.builder import build_dataloader, build_dataset
 from src.mmseg.models.builder import build_segmentor
-from torchview import draw_graph
 
 
 def save_result(img_path,

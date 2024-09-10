@@ -1,10 +1,6 @@
 # FoodMem: Near Real-time and Precise Food Video Segmentation
 
 ---
-
-## Abstract
-Food segmentation, including in videos, is vital for addressing real-world health, agriculture, and food biotechnology issues. Current limitations lead to inaccurate nutritional analysis, inefficient crop management, and suboptimal food processing, impacting food security and public health. Improving segmentation techniques can enhance dietary assessments, agricultural productivity, and the food production process. This study introduces the development of a robust framework for high-quality, near-real-time segmentation and tracking of food items in videos, using minimal hardware resources. We present FoodMem, a novel framework designed to segment food items from video sequences of 360-degree unbounded scenes. FoodMem can consistently generate masks of food portions in a video sequence, overcoming the limitations of existing semantic segmentation models, such as flickering and prohibitive inference speeds in video processing contexts. To address these issues, FoodMem leverages a two-phase solution: a transformer segmentation phase to create initial segmentation masks and a memory-based tracking phase to monitor food masks in complex scenes. Our framework outperforms current state-of-the-art food segmentation models, yielding superior performance across various conditions, such as camera angles, lighting, reflections, scene complexity, and food diversity. This results in reduced segmentation noise, elimination of artifacts, and completion of missing segments. Here, we also introduce a new annotated food dataset encompassing challenging scenarios absent in previous benchmarks. Extensive experiments conducted on Nutrition5k and Vegetables & Fruits datasets demonstrate that FoodMem enhances the state-of-the-art by 2.5% mean average precision in food video segmentation and is 58 x faster on average.
-
 ![FoodMem architecture](assets/FoodMemModel.png)
 
 We used a single image input for simplicity. Our two-stage framework (a) shows the SETR framework, where it accepts an image and generates a mask, followed by (b) XMem2, which accepts the mask and a set of images as a given input and produces masks for all frames.
@@ -35,6 +31,20 @@ bash scripts/download_models.sh
 
 bash scripts/download_models_demo.sh
 ````
+## Or Run with Docker
+```bash
+# Build the docker image
+docker build -t gcvcg/foodmem .
+
+# Run in Docker
+docker run --gpus all -it --rm -e DISPLAY=:1 \ 
+-v /tmp/.X11-unix:/tmp/.X11-unix \
+-v /path/to/data:/vgdata \
+-v $(pwd)/workspace:/app/workspace gcvcg/foodmem bash run.sh /vgdata/$SCENEID
+
+# in case you want to run it in parallel.
+# ls -d /vgdata/*/* | parallel -I% --max-args 1  --jobs 1 bash run.sh %
+```
 
 ## Getting started
 ````bash

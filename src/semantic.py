@@ -2,7 +2,7 @@ import argparse
 
 from mmcv.utils import DictAction
 
-from src.FoodSAM_tools.predict_semantic_mask import semantic_predict
+from FoodSAM_tools.predict_semantic_mask import semantic_predict
 
 parser = argparse.ArgumentParser(
     description=(
